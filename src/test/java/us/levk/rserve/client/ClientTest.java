@@ -57,7 +57,12 @@ public class ClientTest implements Streams {
     Thread.yield ();
     x.matches (loadb64 (b).array ());
     System.out.println (w + ":" + r);
-    w.receive (loadb64 (r));
+    try {
+      w.receive (loadb64 (r));
+    } catch (NullPointerException e) {
+      e.printStackTrace ();
+      throw e;
+    }
     return f.get ();
   }
 
