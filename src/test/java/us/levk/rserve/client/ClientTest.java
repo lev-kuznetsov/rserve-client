@@ -27,6 +27,7 @@ package us.levk.rserve.client;
 
 import static java.util.concurrent.Executors.newWorkStealingPool;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -54,15 +55,9 @@ public class ClientTest implements Streams {
     MatchingRemoteMock x = new MatchingRemoteMock ();
     Endpoint w = w (x);
     CompletableFuture <T> f = n.apply (w);
-    Thread.yield ();
-    x.matches (loadb64 (b).array ());
-    System.out.println (w + ":" + r);
-    try {
-      w.receive (loadb64 (r));
-    } catch (NullPointerException e) {
-      e.printStackTrace ();
-      throw e;
-    }
+    Thread.sleep (500);
+    assertTrue (x.matches (loadb64 (b).array ()));
+    w.receive (loadb64 (r));
     return f.get ();
   }
 

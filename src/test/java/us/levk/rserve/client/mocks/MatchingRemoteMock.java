@@ -25,13 +25,12 @@
  */
 package us.levk.rserve.client.mocks;
 
-import static java.nio.ByteBuffer.wrap;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import javax.websocket.EncodeException;
 import javax.websocket.RemoteEndpoint.Basic;
@@ -70,7 +69,7 @@ public class MatchingRemoteMock extends BaseMatcher <ByteBuffer> implements Basi
 
   @Override
   public boolean matches (Object item) {
-    return wrap (buffer.toByteArray ()).equals (item);
+    return Arrays.equals (buffer.toByteArray (), (byte[]) item);
   }
 
   @Override
