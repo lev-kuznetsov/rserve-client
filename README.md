@@ -1,2 +1,2 @@
-# xserve-client
+# Rserve-client
 Rserve client
