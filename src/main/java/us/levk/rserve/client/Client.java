@@ -39,7 +39,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.util.Base64;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
@@ -299,17 +298,5 @@ public interface Client extends Closeable {
    */
   public static Builder rserve (RserveMapper m, ExecutorService e) {
     return new Builder (m, e);
-  }
-
-  public static void main (String[] args) throws Exception {
-//    try (Client c = rserve ().websocket ().connect ("ws://192.168.99.101:8081")) {
-//      c.evaluate ("foo<-'bar'").get ();
-//      Thread.sleep (10000);
-//      c.resolve ("foo", String.class).get ();
-//    }
-     System.out.println (Base64.getEncoder ().encodeToString (new byte[] {
-0x03, 0x00 , 0x00 , 0x00 , 0x0c , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00, 0x04 , 0x08 , 0x00 , 0x00 , 0x66 , 0x6f , 0x6f , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 }));
-     System.out.println (Base64.getEncoder ().encodeToString (new byte[] {
-0x03, 0x00 , 0x00 , 0x00 , 0x0c , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 , 0x00 }));
   }
 }
