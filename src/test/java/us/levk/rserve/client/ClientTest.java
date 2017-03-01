@@ -56,6 +56,7 @@ public class ClientTest implements Streams {
     CompletableFuture <T> f = n.apply (w);
     Thread.yield ();
     x.matches (loadb64 (b).array ());
+    System.out.println (w + ":" + r);
     w.receive (loadb64 (r));
     return f.get ();
   }
