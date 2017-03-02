@@ -31,11 +31,15 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 import static us.levk.rserve.client.Client.rserve;
 
+import java.util.concurrent.CompletableFuture;
+
 import org.junit.Test;
 
 import us.levk.jackson.rserve.RserveMapper;
 
 public class E2e {
+
+  private final String RSERVE = "ws://192.168.99.101:8081";
 
   /// Declarative
 
@@ -43,7 +47,7 @@ public class E2e {
 
   @Test
   public void fibonacci () throws Exception {
-    try (Client c = Client.rserve ().websocket ().connect ("ws://localhost:8081")) {
+    try (Client c = Client.rserve ().websocket ().connect (RSERVE)) {
       Fib f = c.batch (new Fib (11)).get ();
       assertThat (f.r, is (89));
     }
@@ -55,7 +59,7 @@ public class E2e {
   public void kMeans () throws Exception {
     RserveMapper m = new RserveMapper ();
     m.enable (ACCEPT_SINGLE_VALUE_AS_ARRAY);
-    try (Client c = rserve (m).websocket ().connect ("ws://localhost:8081")) {
+    try (Client c = rserve (m).websocket ().connect (RSERVE)) {
       KMeans k = c.batch (new KMeans (new double[][] { new double[] { .1, .2, .3 }, new double[] { .1, .2, .4 },
                                                        new double[] { 22, 33, 44 } },
                                       2)).get ();
@@ -67,11 +71,13 @@ public class E2e {
 
   @Test
   public void factorial () throws Exception {
-    try (Client c = rserve ().websocket ().connect ("ws://localhost:8081")) {
-      c.assign ("n", 5);
-      c.evaluate ("f <- function (n) if (n < 1) 1 else n * f (n - 1)");
-      c.evaluate ("r <- f (n)");
-      assertThat (c.resolve ("r", Integer.class).get (), is (120));
+    try (Client c = rserve ().websocket ().connect (RSERVE)) {
+      CompletableFuture <?> f = c.assign ("n", 5);
+      f = f.thenCompose (x -> c.evaluate ("f <- function (n) if (n < 1) 1 else n * f (n - 1)"));
+      f = f.thenCompose (x -> c.evaluate ("r <- f(n)"));
+      f = f.thenCompose (x -> c.resolve ("r", Integer.class));
+      int r = (Integer) f.get ();
+      assertThat (r, is (120));
     }
   }
 }

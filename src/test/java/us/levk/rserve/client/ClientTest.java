@@ -29,7 +29,6 @@ import static java.util.concurrent.Executors.newWorkStealingPool;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
@@ -41,7 +40,6 @@ import javax.websocket.RemoteEndpoint.Basic;
 import org.junit.Test;
 
 import us.levk.jackson.rserve.RserveMapper;
-import us.levk.rserve.client.mocks.MatchingRemoteMock;
 import us.levk.rserve.client.mocks.StreamingMatchingRemoteMock;
 import us.levk.rserve.client.mocks.WebSocketContainerMock;
 import us.levk.rserve.client.websocket.Endpoint;
@@ -56,13 +54,13 @@ public class ClientTest implements Streams {
   }
 
   private <T> T command (Function <Client, CompletableFuture <T>> n, String b, String r) throws Exception {
-    MatchingRemoteMock x = new MatchingRemoteMock ();
-    Endpoint w = w (x);
-    CompletableFuture <T> f = n.apply (w);
-    Thread.sleep (500);
-    assertTrue (x.matches (loadb64 (b).array ()));
-    w.receive (loadb64 (r));
-    return f.get ();
+    StreamingMatchingRemoteMock y = new StreamingMatchingRemoteMock ();
+    Endpoint w = w (y);
+    y.add (loadb64 (b).array (), () -> {
+      w.receive (loadb64 (r));
+      return null;
+    });
+    return n.apply (w).get ();
   }
 
   @Test

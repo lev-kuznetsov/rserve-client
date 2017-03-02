@@ -25,7 +25,11 @@
  */
 package us.levk.rserve.client.websocket;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.util.Optional.ofNullable;
+import static java.util.stream.IntStream.range;
 import static us.levk.rserve.client.protocol.Qap.packet;
 
 import java.io.IOException;
@@ -131,7 +135,7 @@ public class Endpoint implements Client {
    */
   @OnError
   public void handle (Throwable e) {
-    receiver.getAndSet (null).completeExceptionally (e);
+    ofNullable (receiver.getAndSet (null)).ifPresent (r -> r.completeExceptionally (e));
   }
 
   /*
@@ -157,14 +161,19 @@ public class Endpoint implements Client {
     queue.getAndUpdate (q -> q.thenRunAsync ( () -> {
       try {
         receiver.set (r);
-        for (Iterator <ByteBuffer> i = (current = c).encode (mapper).iterator (); i.hasNext ();) {
+        for (Iterator <ByteBuffer> i = (current = c).encode (mapper).flatMap (b -> {
+          int a = b.position (), z = b.limit (), s = max (session.getMaxBinaryMessageBufferSize (), 1 << 20);
+          return range (0, 1 + (z - a) / s).map (p -> a + s * p).mapToObj (p -> {
+            b.position (p).limit (min (p + s, z));
+            return b.slice ();
+          });
+        }).iterator ();i.hasNext ();) {
           ByteBuffer b = i.next ();
           session.getBasicRemote ().sendBinary (b, !i.hasNext ());
         }
       } catch (Exception e) {
-        receiver.set (null);
         current = null;
-        r.completeExceptionally (e);
+        receiver.getAndSet (null).completeExceptionally (e);
       }
     }, executor));
 

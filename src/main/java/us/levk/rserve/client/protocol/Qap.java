@@ -47,7 +47,7 @@ public interface Qap {
    */
   static final int DT_STRING = RTalk.DT_STRING;
   /**
-   * Flag for objects larger than 1 << 24
+   * Flag for objects larger than 0xffffff
    */
   static final int DT_LARGE = RTalk.DT_LARGE;
   /**

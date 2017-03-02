@@ -74,6 +74,8 @@ public interface Client extends Closeable {
   /**
    * @param c
    *          command
+   * @param <T>
+   *          of promise
    * @return promise
    */
   <T> CompletableFuture <T> execute (Command <T> c);
@@ -94,6 +96,8 @@ public interface Client extends Closeable {
    *          name
    * @param t
    *          type
+   * @param <T>
+   *          type
    * @return promise
    */
   default <T> CompletableFuture <T> resolve (String n, Type t) {
@@ -112,6 +116,8 @@ public interface Client extends Closeable {
   /**
    * @param j
    *          job
+   * @param <T>
+   *          of job
    * @return promise
    */
   default <T> CompletableFuture <T> batch (T j) {
