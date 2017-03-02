@@ -26,6 +26,7 @@
 package us.levk.rserve.client;
 
 import static com.fasterxml.jackson.databind.DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
@@ -39,7 +40,7 @@ import us.levk.jackson.rserve.RserveMapper;
 
 public class E2e {
 
-  private final String RSERVE = "ws://192.168.99.101:8081";
+  private final String RSERVE = "ws://localhost:8081";
 
   /// Declarative
 
@@ -48,7 +49,7 @@ public class E2e {
   @Test
   public void fibonacci () throws Exception {
     try (Client c = Client.rserve ().websocket ().connect (RSERVE)) {
-      Fib f = c.batch (new Fib (11)).get ();
+      Fib f = c.batch (new Fib (11)).get (10, SECONDS);
       assertThat (f.r, is (89));
     }
   }
@@ -62,7 +63,7 @@ public class E2e {
     try (Client c = rserve (m).websocket ().connect (RSERVE)) {
       KMeans k = c.batch (new KMeans (new double[][] { new double[] { .1, .2, .3 }, new double[] { .1, .2, .4 },
                                                        new double[] { 22, 33, 44 } },
-                                      2)).get ();
+                                      2)).get (10, SECONDS);
       assertArrayEquals (new int[] { 1, 1, 2 }, k.r);
     }
   }
@@ -76,7 +77,7 @@ public class E2e {
       f = f.thenCompose (x -> c.evaluate ("f <- function (n) if (n < 1) 1 else n * f (n - 1)"));
       f = f.thenCompose (x -> c.evaluate ("r <- f(n)"));
       f = f.thenCompose (x -> c.resolve ("r", Integer.class));
-      int r = (Integer) f.get ();
+      int r = (Integer) f.get (10, SECONDS);
       assertThat (r, is (120));
     }
   }
