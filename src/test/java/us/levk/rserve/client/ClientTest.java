@@ -26,7 +26,9 @@
 package us.levk.rserve.client;
 
 import static java.util.concurrent.Executors.newWorkStealingPool;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -34,17 +36,19 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 import javax.websocket.DeploymentException;
+import javax.websocket.RemoteEndpoint.Basic;
 
 import org.junit.Test;
 
 import us.levk.jackson.rserve.RserveMapper;
 import us.levk.rserve.client.mocks.MatchingRemoteMock;
+import us.levk.rserve.client.mocks.StreamingMatchingRemoteMock;
 import us.levk.rserve.client.mocks.WebSocketContainerMock;
 import us.levk.rserve.client.websocket.Endpoint;
 
 public class ClientTest implements Streams {
 
-  private Endpoint w (MatchingRemoteMock r) throws DeploymentException, IOException {
+  private Endpoint w (Basic r) throws DeploymentException, IOException {
     Endpoint w =
         (Endpoint) Client.rserve ().with (newWorkStealingPool ()).with (new RserveMapper ()).websocket (new WebSocketContainerMock (r)).connect ("");
     w.handshake ("Rsrv0103QAP1  --------------  ");
@@ -69,5 +73,27 @@ public class ClientTest implements Streams {
   @Test
   public void wsEvaluateFooToBar () throws Exception {
     assertNull (command (c -> c.evaluate ("foo<-'bar'"), "/evaluateFooToBar.b64", "/emptyPacket.b64"));
+  }
+
+  @Test
+  public void wsResolveRTo89 () throws Exception {
+    assertThat (command (c -> c.resolve ("r", Integer.class), "/resolveR.b64", "/int89Packet.b64"), is (89));
+  }
+
+  @Test
+  public void wsBatchFib () throws Exception {
+    StreamingMatchingRemoteMock b = new StreamingMatchingRemoteMock ();
+    Endpoint w = w (b);
+    b.add (loadb64 ("/assignN11.b64").array (), () -> {
+      w.receive (loadb64 ("/emptyPacket.b64"));
+      return null;
+    }).add (loadb64 ("/evalFibonacci.b64").array (), () -> {
+      w.receive (loadb64 ("/emptyPacket.b64"));
+      return null;
+    }).add (loadb64 ("/resolveR.b64").array (), () -> {
+      w.receive (loadb64 ("/int89packet.b64"));
+      return null;
+    });
+    w.batch (new Fib (11)).thenAccept (f -> assertThat (f.r, is (89)));
   }
 }

@@ -35,8 +35,6 @@ import java.util.stream.Stream;
 
 import org.rosuda.REngine.Rserve.protocol.RTalk;
 
-import us.levk.rserve.client.ErrorPacketException;
-
 /**
  * QAP1 protocol specifics
  * 
@@ -137,6 +135,6 @@ public interface Qap {
       i.position (h);
       if (s > 0) i.position (h + ((i.get () & DT_LARGE) > 0 ? 8 : 4));
       return i;
-    } else throw new ErrorPacketException (r);
+    } else throw new IOException ("Error response packet with error code " + ((r >> 24) & 127));
   }
 }

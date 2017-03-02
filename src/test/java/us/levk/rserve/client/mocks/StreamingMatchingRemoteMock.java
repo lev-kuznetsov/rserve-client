@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 lev.v.kuznetsov@gmail.com
+ * Copyright (c) 2017 Dana-Farber Cancer Institute
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -23,27 +23,41 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-package us.levk.rserve.client;
+package us.levk.rserve.client.mocks;
 
+import static org.junit.Assert.assertArrayEquals;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 
-/**
- * Error packet code
- * 
- * @author levk
- */
-public class ErrorPacketException extends IOException {
+public class StreamingMatchingRemoteMock extends RemoteMockAdapter {
 
-  /**
-   * Serialization
-   */
-  private static final long serialVersionUID = 1L;
+  ByteArrayOutputStream m = new ByteArrayOutputStream ();
+  final LinkedHashMap <byte[], Callable <?>> h = new LinkedHashMap <> ();
+  Iterator <Entry <byte[], Callable <?>>> i;
 
-  /**
-   * @param c
-   *          code
-   */
-  public ErrorPacketException (int c) {
-    super ("Bad return packet code " + c);
+  public StreamingMatchingRemoteMock add (byte[] p, Callable <?> c) {
+    h.put (p, c);
+    i = h.entrySet ().iterator ();
+    return this;
+  }
+
+  public void sendBinary (ByteBuffer b, boolean l) throws IOException {
+    m.write (b.array (), b.position (), b.limit () - b.position ());
+    if (l) {
+      Entry <byte[], Callable <?>> e = i.next ();
+      assertArrayEquals (e.getKey (), m.toByteArray ());
+      m = new ByteArrayOutputStream ();
+      try {
+        e.getValue ().call ();
+      } catch (Exception x) {
+        throw new RuntimeException (x);
+      }
+    }
   }
 }

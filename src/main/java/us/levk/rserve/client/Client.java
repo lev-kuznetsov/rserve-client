@@ -31,12 +31,16 @@ import static java.util.concurrent.Executors.newWorkStealingPool;
 import static java.util.regex.Pattern.DOTALL;
 import static java.util.regex.Pattern.MULTILINE;
 import static java.util.regex.Pattern.compile;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Stream.of;
 import static javax.websocket.ContainerProvider.getWebSocketContainer;
 import static us.levk.rserve.client.tools.reflect.Classes.base;
 
+import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +49,8 @@ import java.util.regex.Pattern;
 
 import javax.websocket.DeploymentException;
 import javax.websocket.WebSocketContainer;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import us.levk.jackson.rserve.RserveMapper;
 import us.levk.rserve.client.protocol.commands.Assign;
@@ -124,9 +130,15 @@ public interface Client extends Closeable {
       return r;
     }), (x, y) -> {
       throw new UnsupportedOperationException ();
-    }), (p, c) -> p.thenCompose (x -> {
-      return evaluate (c.getAnnotation (R.class).value ());
-    }), (x, y) -> {
+    }), (p, c) -> {
+      p = c.isAnnotationPresent (R.class) ? p.thenCompose (x -> {
+        return evaluate (c.getAnnotation (R.class).value ());
+      }) : p;
+      return c.isAnnotationPresent (Rscript.class) ? p.thenCompose (x -> {
+        InputStream r = c.getResourceAsStream (c.getAnnotation (Rscript.class).value ());
+        return evaluate (new BufferedReader (new InputStreamReader (r)).lines ().collect (joining ("\n")));
+      }) : p;
+    }, (x, y) -> {
       throw new UnsupportedOperationException ();
     }), (p, f) -> p.thenCompose (x -> {
       if (!f.isAccessible ()) f.setAccessible (true);
@@ -155,7 +167,7 @@ public interface Client extends Closeable {
     /**
      * Object mapper
      */
-    private final RserveMapper mapper;
+    private final ObjectMapper mapper;
     /**
      * Async provider
      */
@@ -167,7 +179,7 @@ public interface Client extends Closeable {
      * @param e
      *          executor
      */
-    private Builder (RserveMapper m, ExecutorService e) {
+    private Builder (ObjectMapper m, ExecutorService e) {
       mapper = m;
       executor = e;
     }

@@ -39,12 +39,12 @@ import static us.levk.rserve.client.protocol.Qap.sexp;
 import static us.levk.rserve.client.protocol.Qap.string;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import org.junit.Test;
 
 import us.levk.jackson.rserve.RserveMapper;
 import us.levk.rserve.client.Streams;
-import us.levk.rserve.client.ErrorPacketException;
 
 public class QapTest implements Streams {
 
@@ -81,7 +81,7 @@ public class QapTest implements Streams {
     assertThat (packet (loadb64 ("/emptyPacket.b64").order (LITTLE_ENDIAN)), is (wrap (new byte[0])));
   }
 
-  @Test (expected = ErrorPacketException.class)
+  @Test (expected = IOException.class)
   public void badPacket () throws Exception {
     packet (loadb64 ("/badPacket.b64").order (LITTLE_ENDIAN));
   }
