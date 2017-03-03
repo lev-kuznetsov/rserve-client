@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/lev-kuznetsov/rserve-client.svg?branch=master)](https://travis-ci.org/lev-kuznetsov/rserve-client) [![Coverage Status](https://coveralls.io/repos/github/lev-kuznetsov/rserve-client/badge.svg?branch=master)](https://coveralls.io/github/lev-kuznetsov/rserve-client?branch=master)
+[![Build Status](https://travis-ci.org/lev-kuznetsov/rserve-client.svg?branch=master)](https://travis-ci.org/lev-kuznetsov/rserve-client) [![Coverage Status](https://coveralls.io/repos/github/lev-kuznetsov/rserve-client/badge.svg?branch=master)](https://coveralls.io/github/lev-kuznetsov/rserve-client?branch=master) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/us.levk/rserve-client/badge.svg)](https://maven-badges.herokuapp.com/maven-central/us.levk/rserve-client)
 
 # rserve-client
 
