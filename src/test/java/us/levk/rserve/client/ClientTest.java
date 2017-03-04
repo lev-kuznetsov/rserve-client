@@ -99,7 +99,7 @@ public class ClientTest implements Streams {
       w.receive (loadb64 ("/int89packet.b64"));
       return null;
     });
-    w.batch (new Fib (11)).thenAccept (f -> assertThat (f.r, is (89))).get (10, TimeUnit.SECONDS);
+    w.batch (new Fib (11)).thenAccept (f -> assertThat (f.r, is (89)));
   }
 
   @Test
