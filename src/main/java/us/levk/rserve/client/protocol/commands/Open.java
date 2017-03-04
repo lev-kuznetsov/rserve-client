@@ -25,39 +25,45 @@
  */
 package us.levk.rserve.client.protocol.commands;
 
+import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
+import static us.levk.rserve.client.protocol.Qap.CMD_openFile;
+import static us.levk.rserve.client.protocol.Qap.string;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Rserve command
+ * Command to open file for reading
  * 
  * @author levk
  */
-public interface Command <T> {
+public class Open implements Command <Void> {
 
-  /**
-   * @param m
-   *          mapper
-   * @return stream of encoded buffers representing the command
-   * @throws IOException
-   *           on encoding failure
-   */
-  Stream <ByteBuffer> encode (ObjectMapper m) throws IOException;
+  private final String name;
 
-  /**
-   * @param c
-   *          content
-   * @param m
-   *          mapper
-   * @return decoded object
-   * @throws IOException
-   *           on decoding failure
+  public Open (String n) {
+    name = n;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see us.levk.rserve.client.protocol.commands.Command#encode(com.fasterxml.
+   * jackson.databind.ObjectMapper)
    */
-  default T decode (ByteBuffer c, ObjectMapper m) throws IOException {
-    if (c == null || c.limit () <= c.position ()) return null;
-    else throw new IOException ("Unexpected content for " + getClass ().getSimpleName () + " command");
+  @Override
+  public Stream <ByteBuffer> encode (ObjectMapper m) throws IOException {
+    List <ByteBuffer> n = string (name).collect (toList ());
+    return concat (of (allocate (16).order (LITTLE_ENDIAN).putInt (0, CMD_openFile).putInt (4, n.stream ().map (b -> {
+      return b.limit () - b.position ();
+    }).reduce (0, (x, y) -> x + y))), n.stream ());
   }
 }

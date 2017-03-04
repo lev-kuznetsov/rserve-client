@@ -25,39 +25,57 @@
  */
 package us.levk.rserve.client.protocol.commands;
 
+import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
+import static us.levk.rserve.client.protocol.Qap.CMD_readFile;
+import static us.levk.rserve.client.protocol.Qap.integer;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.List;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Rserve command
+ * Command to read a buffer from the opened file
  * 
  * @author levk
  */
-public interface Command <T> {
+public class Read implements Command <ByteBuffer> {
 
-  /**
-   * @param m
-   *          mapper
-   * @return stream of encoded buffers representing the command
-   * @throws IOException
-   *           on encoding failure
-   */
-  Stream <ByteBuffer> encode (ObjectMapper m) throws IOException;
+  private final int request;
 
-  /**
-   * @param c
-   *          content
-   * @param m
-   *          mapper
-   * @return decoded object
-   * @throws IOException
-   *           on decoding failure
+  public Read (int r) {
+    request = r;
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see us.levk.rserve.client.protocol.commands.Command#encode(com.fasterxml.
+   * jackson.databind.ObjectMapper)
    */
-  default T decode (ByteBuffer c, ObjectMapper m) throws IOException {
-    if (c == null || c.limit () <= c.position ()) return null;
-    else throw new IOException ("Unexpected content for " + getClass ().getSimpleName () + " command");
+  @Override
+  public Stream <ByteBuffer> encode (ObjectMapper m) throws IOException {
+    List <ByteBuffer> n = integer (request).collect (toList ());
+    return concat (of (allocate (16).order (LITTLE_ENDIAN).putInt (0, CMD_readFile).putInt (4, n.stream ().map (b -> {
+      return b.limit () - b.position ();
+    }).reduce (0, (x, y) -> x + y))), n.stream ());
+  }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see
+   * us.levk.rserve.client.protocol.commands.Command#decode(java.nio.ByteBuffer,
+   * com.fasterxml.jackson.databind.ObjectMapper)
+   */
+  @Override
+  public ByteBuffer decode (ByteBuffer c, ObjectMapper m) throws IOException {
+    return c;
   }
 }

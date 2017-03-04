@@ -25,7 +25,6 @@
  */
 package us.levk.rserve.client.websocket;
 
-import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Optional.ofNullable;
@@ -162,7 +161,7 @@ public class Endpoint implements Client {
       try {
         receiver.set (r);
         for (Iterator <ByteBuffer> i = (current = c).encode (mapper).flatMap (b -> {
-          int a = b.position (), z = b.limit (), s = max (session.getMaxBinaryMessageBufferSize (), 1 << 20);
+          int a = b.position (), z = b.limit (), s = 1 << 18;
           return range (0, 1 + (z - a) / s).map (p -> a + s * p).mapToObj (p -> {
             b.position (p).limit (min (p + s, z));
             return b.slice ();

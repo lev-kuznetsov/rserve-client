@@ -25,26 +25,36 @@
  */
 package us.levk.rserve.client;
 
+import static java.lang.Math.min;
 import static java.net.URI.create;
+import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.Executors.newWorkStealingPool;
 import static java.util.regex.Pattern.DOTALL;
 import static java.util.regex.Pattern.MULTILINE;
 import static java.util.regex.Pattern.compile;
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.LongStream.range;
 import static java.util.stream.Stream.of;
 import static javax.websocket.ContainerProvider.getWebSocketContainer;
 import static us.levk.rserve.client.tools.reflect.Classes.base;
 
 import java.io.BufferedReader;
 import java.io.Closeable;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Type;
+import java.lang.reflect.UndeclaredThrowableException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.websocket.DeploymentException;
@@ -54,9 +64,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import us.levk.jackson.rserve.RserveMapper;
 import us.levk.rserve.client.protocol.commands.Assign;
+import us.levk.rserve.client.protocol.commands.Close;
 import us.levk.rserve.client.protocol.commands.Command;
+import us.levk.rserve.client.protocol.commands.Create;
 import us.levk.rserve.client.protocol.commands.Evaluate;
+import us.levk.rserve.client.protocol.commands.Open;
+import us.levk.rserve.client.protocol.commands.Read;
 import us.levk.rserve.client.protocol.commands.Resolve;
+import us.levk.rserve.client.protocol.commands.Write;
 import us.levk.rserve.client.websocket.Endpoint;
 
 /**
@@ -70,6 +85,10 @@ public interface Client extends Closeable {
    * Welcome wagon regex
    */
   static final Pattern HANDSHAKE_PATTERN = compile ("Rsrv0103QAP1.*--------------.*", MULTILINE | DOTALL);
+  /**
+   * File IO operations buffer size
+   */
+  static final int FILE_COMMAND_BUFFER_SIZE = 1 << 20;
 
   /**
    * @param c
@@ -111,6 +130,82 @@ public interface Client extends Closeable {
    */
   default CompletableFuture <Void> evaluate (String c) {
     return execute (new Evaluate (c));
+  }
+
+  default CompletableFuture <Void> push (File f) {
+    CompletableFuture <Void> p = new CompletableFuture <> ();
+
+    try {
+      long l = f.length ();
+      RandomAccessFile s = new RandomAccessFile (f, "r");
+      range (0, 1 + l / FILE_COMMAND_BUFFER_SIZE).map (q -> q * FILE_COMMAND_BUFFER_SIZE).mapToObj (q -> {
+        try {
+          return s.getChannel ().map (READ_ONLY, q, min (q + FILE_COMMAND_BUFFER_SIZE, l));
+        } catch (IOException e) {
+          throw new UndeclaredThrowableException (e);
+        }
+      }).reduce (execute (new Create (f.getName ())), (c, b) -> c.thenCompose (x -> {
+        return execute (new Write (b));
+      }), (x, y) -> {
+        throw new UnsupportedOperationException ();
+      }).thenCompose (x -> execute (new Close ())).whenComplete ( (x, e) -> {
+        try {
+          s.close ();
+        } catch (Exception i) {
+          if (e != null) e.addSuppressed (i);
+          else e = i;
+        }
+        if (e != null) p.completeExceptionally (e);
+        else p.complete (null);
+      });
+    } catch (UndeclaredThrowableException e) {
+      p.completeExceptionally (e.getCause ());
+    } catch (Exception e) {
+      p.completeExceptionally (e);
+    }
+
+    return p;
+  }
+
+  default CompletableFuture <Void> pull (File f) {
+    CompletableFuture <Void> p = new CompletableFuture <> ();
+
+    try {
+      FileOutputStream o = new FileOutputStream (f);
+      FileChannel c = o.getChannel ();
+      Function <ByteBuffer, CompletableFuture <ByteBuffer>> l =
+          new Function <ByteBuffer, CompletableFuture <ByteBuffer>> () {
+
+            @Override
+            public CompletableFuture <ByteBuffer> apply (ByteBuffer b) {
+              try {
+                int s = b.limit () - b.position ();
+                c.write (b);
+                if (s == 0) return execute (new Read (FILE_COMMAND_BUFFER_SIZE)).thenCompose (this);
+                else return execute (new Close ()).thenApply (x -> null);
+              } catch (Exception e) {
+                throw new UndeclaredThrowableException (e);
+              }
+            }
+          };
+      execute (new Open (f.getName ())).thenCompose (x -> {
+        return execute (new Read (FILE_COMMAND_BUFFER_SIZE));
+      }).thenCompose (l).whenComplete ( (x, e) -> {
+        if (e instanceof UndeclaredThrowableException) e = e.getCause ();
+        try {
+          o.close ();
+        } catch (Exception i) {
+          if (e != null) e.addSuppressed (i);
+          else e = i;
+        }
+        if (e != null) p.completeExceptionally (e);
+        else p.complete (null);
+      });
+    } catch (Exception e) {
+      p.completeExceptionally (e);
+    }
+
+    return p;
   }
 
   /**

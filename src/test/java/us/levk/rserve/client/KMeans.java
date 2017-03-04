@@ -27,9 +27,9 @@ package us.levk.rserve.client;
 
 @Rscript ("/kmeans.R") // in src/test/resources/kmeans.R
 class KMeans {
-  @Assign final double[][] v; // values
+  @Assign final double[][] v; // values to cluster
   @Assign final int k; // k
-  @Resolve int[] r; // clustering
+  @Resolve int[] r; // clustering result
 
   KMeans (double[][] f, int c) {
     v = f;

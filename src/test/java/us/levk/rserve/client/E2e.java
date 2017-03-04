@@ -32,6 +32,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertThat;
 import static us.levk.rserve.client.Client.rserve;
 
+import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 import org.junit.Test;
@@ -42,10 +43,46 @@ public class E2e {
 
   private final String RSERVE = "ws://localhost:8081";
 
+  /// Programatic
+
+  /**
+   * All command methods return promises, compose promise chain like in this
+   * example or call {@link CompletableFuture#get()} on each to block for
+   * completion like in the following example
+   */
+  @Test
+  public void factorial () throws Exception {
+    try (Client c = rserve ().websocket ().connect (RSERVE)) {
+      CompletableFuture <?> f = c.assign ("n", 5);
+      f = f.thenCompose (x -> c.evaluate ("f <- function (n) if (n < 1) 1 else n * f (n - 1)"));
+      f = f.thenCompose (x -> c.evaluate ("r <- f(n)"));
+      f = f.thenCompose (x -> c.resolve ("r", Integer.class));
+      f = f.thenAccept (r -> assertThat (r, is (120)));
+      f.get (10, SECONDS);
+    }
+  }
+
+  @Test
+  public void pushPull () throws Exception {
+    File t = new File ("/tmp/data.tsv");
+    try (Client c = rserve ().websocket ().connect (RSERVE)) {
+      c.push (new File ("src/test/resources/data.tsv")).get (10, SECONDS);
+      c.evaluate ("d <- read.table ('data.tsv')").get (10, SECONDS);
+      c.evaluate ("n <- colnames (d)").get (10, SECONDS);
+      c.resolve ("n", String[].class).thenAccept (n -> {
+        assertArrayEquals (new String[] { "X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9", "X10" }, (String[]) n);
+      }).get (10, SECONDS);
+      c.pull (t).get (10, SECONDS);
+    } finally {
+      t.delete ();
+    }
+  }
+
   /// Declarative
 
-  // Fibonacci
-
+  /**
+   * @see Fib
+   */
   @Test
   public void fibonacci () throws Exception {
     try (Client c = Client.rserve ().websocket ().connect (RSERVE)) {
@@ -54,8 +91,9 @@ public class E2e {
     }
   }
 
-  // KMeans
-
+  /**
+   * @see KMeans
+   */
   @Test
   public void kMeans () throws Exception {
     RserveMapper m = new RserveMapper ();
@@ -65,20 +103,6 @@ public class E2e {
                                                        new double[] { 22, 33, 44 } },
                                       2)).get (10, SECONDS);
       assertArrayEquals (new int[] { 1, 1, 2 }, k.r);
-    }
-  }
-
-  /// Programatic
-
-  @Test
-  public void factorial () throws Exception {
-    try (Client c = rserve ().websocket ().connect (RSERVE)) {
-      CompletableFuture <?> f = c.assign ("n", 5);
-      f = f.thenCompose (x -> c.evaluate ("f <- function (n) if (n < 1) 1 else n * f (n - 1)"));
-      f = f.thenCompose (x -> c.evaluate ("r <- f(n)"));
-      f = f.thenCompose (x -> c.resolve ("r", Integer.class));
-      int r = (Integer) f.get (10, SECONDS);
-      assertThat (r, is (120));
     }
   }
 }

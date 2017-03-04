@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 lev.v.kuznetsov@gmail.com
+ * Copyright (c) 2017 Dana-Farber Cancer Institute
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -25,6 +25,11 @@
  */
 package us.levk.rserve.client.protocol.commands;
 
+import static java.nio.ByteBuffer.allocate;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static java.util.stream.Stream.of;
+import static us.levk.rserve.client.protocol.Qap.CMD_closeFile;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
@@ -32,32 +37,20 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Rserve command
+ * Command to close file
  * 
  * @author levk
  */
-public interface Command <T> {
+public class Close implements Command <Void> {
 
-  /**
-   * @param m
-   *          mapper
-   * @return stream of encoded buffers representing the command
-   * @throws IOException
-   *           on encoding failure
+  /*
+   * (non-Javadoc)
+   * 
+   * @see us.levk.rserve.client.protocol.commands.Command#encode(com.fasterxml.
+   * jackson.databind.ObjectMapper)
    */
-  Stream <ByteBuffer> encode (ObjectMapper m) throws IOException;
-
-  /**
-   * @param c
-   *          content
-   * @param m
-   *          mapper
-   * @return decoded object
-   * @throws IOException
-   *           on decoding failure
-   */
-  default T decode (ByteBuffer c, ObjectMapper m) throws IOException {
-    if (c == null || c.limit () <= c.position ()) return null;
-    else throw new IOException ("Unexpected content for " + getClass ().getSimpleName () + " command");
+  @Override
+  public Stream <ByteBuffer> encode (ObjectMapper m) throws IOException {
+    return of (allocate (16).order (LITTLE_ENDIAN).putInt (0, CMD_closeFile).putInt (4, 0));
   }
 }

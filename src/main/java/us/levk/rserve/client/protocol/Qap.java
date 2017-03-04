@@ -27,6 +27,7 @@ package us.levk.rserve.client.protocol;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.wrap;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.stream.Stream.of;
 
 import java.io.IOException;
@@ -54,6 +55,8 @@ public interface Qap {
    * SEXP type
    */
   static final int DT_SEXP = RTalk.DT_SEXP;
+  static final int DT_BYTESTREAM = RTalk.DT_BYTESTREAM;
+  static final int DT_INT = RTalk.DT_INT;
 
   /**
    * Assign command code
@@ -67,6 +70,11 @@ public interface Qap {
    * Evaluate without result command code
    */
   static final int CMD_voidEval = RTalk.CMD_voidEval;
+  static final int CMD_createFile = RTalk.CMD_createFile;
+  static final int CMD_writeFile = RTalk.CMD_writeFile;
+  static final int CMD_closeFile = RTalk.CMD_closeFile;
+  static final int CMD_openFile = RTalk.CMD_openFile;
+  static final int CMD_readFile = RTalk.CMD_readFile;
 
   /**
    * @param c
@@ -118,6 +126,24 @@ public interface Qap {
    */
   static Stream <ByteBuffer> sexp (byte[] c) {
     return of (header (DT_SEXP, c.length), wrap (c));
+  }
+
+  /**
+   * @param i
+   *          integer
+   * @return stream of encoded buffers
+   */
+  static Stream <ByteBuffer> integer (int i) {
+    return of (header (DT_INT, 4), allocate (4).order (LITTLE_ENDIAN).putInt (0, i));
+  }
+
+  /**
+   * @param b
+   *          buffer
+   * @return stream of encoded buffers
+   */
+  static Stream <ByteBuffer> stream (ByteBuffer b) {
+    return of (header (DT_BYTESTREAM, b.limit () - b.position ()), b);
   }
 
   /**
