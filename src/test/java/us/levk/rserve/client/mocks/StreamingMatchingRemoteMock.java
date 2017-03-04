@@ -48,7 +48,9 @@ public class StreamingMatchingRemoteMock extends RemoteMockAdapter {
   }
 
   public void sendBinary (ByteBuffer b, boolean l) throws IOException {
-    m.write (b.array (), b.position (), b.limit () - b.position ());
+    byte[] o = new byte[b.limit () - b.position ()];
+    b.get (o);
+    m.write (o);
     if (l) {
       Entry <byte[], Callable <?>> e = i.next ();
       assertArrayEquals (e.getKey (), m.toByteArray ());

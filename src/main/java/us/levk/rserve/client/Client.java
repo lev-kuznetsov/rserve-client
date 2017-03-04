@@ -88,7 +88,7 @@ public interface Client extends Closeable {
   /**
    * File IO operations buffer size
    */
-  static final int FILE_COMMAND_BUFFER_SIZE = 1 << 20;
+  static final int FILE_COMMAND_BUFFER_SIZE = 1 << 18;
 
   /**
    * @param c
@@ -132,6 +132,11 @@ public interface Client extends Closeable {
     return execute (new Evaluate (c));
   }
 
+  /**
+   * @param f
+   *          file
+   * @return promise
+   */
   default CompletableFuture <Void> push (File f) {
     CompletableFuture <Void> p = new CompletableFuture <> ();
 
@@ -140,7 +145,7 @@ public interface Client extends Closeable {
       RandomAccessFile s = new RandomAccessFile (f, "r");
       range (0, 1 + l / FILE_COMMAND_BUFFER_SIZE).map (q -> q * FILE_COMMAND_BUFFER_SIZE).mapToObj (q -> {
         try {
-          return s.getChannel ().map (READ_ONLY, q, min (q + FILE_COMMAND_BUFFER_SIZE, l));
+          return s.getChannel ().map (READ_ONLY, q, min (FILE_COMMAND_BUFFER_SIZE, l - q));
         } catch (IOException e) {
           throw new UndeclaredThrowableException (e);
         }
@@ -167,6 +172,11 @@ public interface Client extends Closeable {
     return p;
   }
 
+  /**
+   * @param f
+   *          file
+   * @return promise
+   */
   default CompletableFuture <Void> pull (File f) {
     CompletableFuture <Void> p = new CompletableFuture <> ();
 
@@ -181,7 +191,7 @@ public interface Client extends Closeable {
               try {
                 int s = b.limit () - b.position ();
                 c.write (b);
-                if (s == 0) return execute (new Read (FILE_COMMAND_BUFFER_SIZE)).thenCompose (this);
+                if (s > 0) return execute (new Read (FILE_COMMAND_BUFFER_SIZE)).thenCompose (this);
                 else return execute (new Close ()).thenApply (x -> null);
               } catch (Exception e) {
                 throw new UndeclaredThrowableException (e);

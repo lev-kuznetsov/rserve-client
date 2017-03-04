@@ -30,6 +30,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -92,6 +93,23 @@ public class ClientTest implements Streams {
       w.receive (loadb64 ("/int89packet.b64"));
       return null;
     });
-    w.batch (new Fib (11)).thenAccept (f -> assertThat (f.r, is (89)));
+    w.batch (new Fib (11)).thenAccept (f -> assertThat (f.r, is (89))).get ();
+  }
+
+  @Test
+  public void wsPushDataTsv () throws Exception {
+    StreamingMatchingRemoteMock b = new StreamingMatchingRemoteMock ();
+    Endpoint w = w (b);
+    b.add (loadb64 ("/createDataTsv.b64").array (), () -> {
+      w.receive (loadb64 ("/emptyPacket.b64"));
+      return null;
+    }).add (loadb64 ("/writeDataTsv.b64").array (), () -> {
+      w.receive (loadb64 ("/emptyPacket.b64"));
+      return null;
+    }).add (loadb64 ("/close.b64").array (), () -> {
+      w.receive (loadb64 ("/emptyPacket.b64"));
+      return null;
+    });
+    w.push (new File ("src/test/resources/data.tsv")).get ();
   }
 }

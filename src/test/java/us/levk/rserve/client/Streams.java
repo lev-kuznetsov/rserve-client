@@ -33,6 +33,7 @@ import static org.junit.Assert.assertArrayEquals;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Base64;
 import java.util.stream.Stream;
 
 public interface Streams {
@@ -49,5 +50,22 @@ public interface Streams {
       s.forEach (b -> a.write (b.array (), b.position (), b.limit () - b.position ()));
       assertArrayEquals (loadb64 (r).array (), a.toByteArray ());
     }
+  }
+
+  default void b64 (Stream <ByteBuffer> s) {
+    byte[] q = s.reduce (new ByteArrayOutputStream (), (o, b) -> {
+      byte[] t = new byte[b.limit () - b.position ()];
+      b.get (t);
+      try {
+        o.write (t);
+      } catch (IOException e) {
+        // TODO Auto-generated catch block
+        e.printStackTrace ();
+      }
+      return o;
+    }, (x, y) -> {
+      throw new UnsupportedOperationException ();
+    }).toByteArray ();
+    System.out.println (Base64.getEncoder ().encodeToString (q));
   }
 }
