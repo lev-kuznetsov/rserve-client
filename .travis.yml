@@ -16,4 +16,4 @@ script:
 - mvn verify -Pit,cover
 
 after_success:
-  - mvn coveralls:report
+  - mvn coveralls:report -Pcover
