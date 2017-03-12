@@ -25,18 +25,13 @@
  */
 package us.levk.rserve.client;
 
-import static java.util.concurrent.Executors.*;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -118,42 +113,4 @@ public class ClientTest implements Streams {
     });
     w.push (new File ("src/test/resources/data.tsv")).get (10, TimeUnit.SECONDS);
   }
-
-//  @Test
-//  public void wsPullDataTsv () throws Exception {
-//    Path d = Files.createTempDirectory ("");
-//    try {
-//      StreamingMatchingRemoteMock b = new StreamingMatchingRemoteMock ();
-//      Endpoint w = w (b);
-//      b.add (loadb64 ("/openDataTsv.b64").array (), () -> {
-//        System.out.println ("opening");
-//        w.receive (loadb64 ("/emptyPacket.b64"));
-//        System.out.println ("opened");
-//        return null;
-//      }).add (loadb64 ("/read1M.b64").array (), () -> {
-//        System.out.println ("reading");
-//        w.receive (loadb64 ("/dataTsvStreamPacket.b64"));
-//        System.out.println ("read");
-//        return null;
-//      }).add (loadb64 ("/close.b64").array (), () -> {
-//        System.out.println ("closing");
-//        w.receive (loadb64 ("/emptyPacket.b64"));
-//        System.out.println ("closed");
-//        return null;
-//      });
-//      w.pull (new File (d.toFile (), "data.tsv")).get (10, TimeUnit.SECONDS);
-//    } finally {
-//      Files.walkFileTree (d, new SimpleFileVisitor <Path> () {
-//        public FileVisitResult visitFile (Path f, BasicFileAttributes attrs) throws IOException {
-//          Files.delete (f);
-//          return FileVisitResult.CONTINUE;
-//        }
-//
-//        public FileVisitResult postVisitDirectory (Path d, IOException exc) throws IOException {
-//          Files.delete (d);
-//          return FileVisitResult.CONTINUE;
-//        }
-//      });
-//    }
-//  }
 }

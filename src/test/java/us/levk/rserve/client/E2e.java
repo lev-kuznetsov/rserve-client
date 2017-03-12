@@ -41,7 +41,7 @@ import us.levk.jackson.rserve.RserveMapper;
 
 public class E2e {
 
-  private final String RSERVE = "ws://localhost:8081";
+  private final String RSERVE = "ws://192.168.64.2:8081";
 
   /// Programatic
 
@@ -63,8 +63,7 @@ public class E2e {
   }
 
   @Test
-  public void pushPull () throws Exception {
-    File t = new File ("/tmp/data.tsv");
+  public void push () throws Exception {
     try (Client c = rserve ().websocket ().connect (RSERVE)) {
       c.push (new File ("src/test/resources/data.tsv")).get (10, SECONDS);
       c.evaluate ("d <- read.table ('data.tsv')").get (10, SECONDS);
@@ -72,9 +71,6 @@ public class E2e {
       c.resolve ("n", String[].class).thenAccept (n -> {
         assertArrayEquals (new String[] { "X1", "X2", "X3", "X4", "X5", "X6", "X7", "X8", "X9", "X10" }, (String[]) n);
       }).get (10, SECONDS);
-      c.pull (t).get (10, SECONDS);
-    } finally {
-      t.delete ();
     }
   }
 

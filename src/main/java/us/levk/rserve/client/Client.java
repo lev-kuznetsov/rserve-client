@@ -42,7 +42,6 @@ import static us.levk.rserve.client.tools.reflect.Classes.base;
 import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -50,11 +49,8 @@ import java.io.RandomAccessFile;
 import java.lang.reflect.Type;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 
 import javax.websocket.DeploymentException;
@@ -68,8 +64,6 @@ import us.levk.rserve.client.protocol.commands.Close;
 import us.levk.rserve.client.protocol.commands.Command;
 import us.levk.rserve.client.protocol.commands.Create;
 import us.levk.rserve.client.protocol.commands.Evaluate;
-import us.levk.rserve.client.protocol.commands.Open;
-import us.levk.rserve.client.protocol.commands.Read;
 import us.levk.rserve.client.protocol.commands.Resolve;
 import us.levk.rserve.client.protocol.commands.Write;
 import us.levk.rserve.client.websocket.Endpoint;
@@ -165,52 +159,6 @@ public interface Client extends Closeable {
       });
     } catch (UndeclaredThrowableException e) {
       p.completeExceptionally (e.getCause ());
-    } catch (Exception e) {
-      p.completeExceptionally (e);
-    }
-
-    return p;
-  }
-
-  /**
-   * @param f
-   *          file
-   * @return promise
-   */
-  default CompletableFuture <Void> pull (File f) {
-    CompletableFuture <Void> p = new CompletableFuture <> ();
-
-    try {
-      FileOutputStream o = new FileOutputStream (f);
-      FileChannel c = o.getChannel ();
-      Function <ByteBuffer, CompletableFuture <ByteBuffer>> l =
-          new Function <ByteBuffer, CompletableFuture <ByteBuffer>> () {
-
-            @Override
-            public CompletableFuture <ByteBuffer> apply (ByteBuffer b) {
-              try {
-                int s = b.limit () - b.position ();
-                c.write (b);
-                if (s > 0) return execute (new Read (FILE_COMMAND_BUFFER_SIZE)).thenCompose (this);
-                else return execute (new Close ()).thenApply (x -> null);
-              } catch (Exception e) {
-                throw new UndeclaredThrowableException (e);
-              }
-            }
-          };
-      execute (new Open (f.getName ())).thenCompose (x -> {
-        return execute (new Read (FILE_COMMAND_BUFFER_SIZE));
-      }).thenCompose (l).whenComplete ( (x, e) -> {
-        if (e instanceof UndeclaredThrowableException) e = e.getCause ();
-        try {
-          o.close ();
-        } catch (Exception i) {
-          if (e != null) e.addSuppressed (i);
-          else e = i;
-        }
-        if (e != null) p.completeExceptionally (e);
-        else p.complete (null);
-      });
     } catch (Exception e) {
       p.completeExceptionally (e);
     }
