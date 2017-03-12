@@ -41,7 +41,7 @@ import us.levk.jackson.rserve.RserveMapper;
 
 public class E2e {
 
-  private final String RSERVE = "ws://192.168.64.2:8081";
+  private final String RSERVE = "ws://localhost:8081";
 
   /// Programatic
 
