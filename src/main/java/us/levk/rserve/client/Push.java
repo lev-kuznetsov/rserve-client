@@ -1,6 +1,6 @@
 /*
  * The MIT License (MIT)
- * Copyright (c) 2017 lev.v.kuznetsov@gmail.com
+ * Copyright (c) 2017 Dana-Farber Cancer Institute
  *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -29,22 +29,19 @@ import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
+import java.io.File;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * Marks batch type members as resolution targets after code execution
+ * Annotates a member with a file resource to push
+ * 
+ * Members of types other than {@link File} will produce an error
  * 
  * @author levk
  */
 @Retention (RUNTIME)
 @Target ({ FIELD, METHOD })
 @Documented
-public @interface Resolve {
-
-  /**
-   * @return name to resolve, default to name of member
-   */
-  String value () default "";
-}
+public @interface Push {}

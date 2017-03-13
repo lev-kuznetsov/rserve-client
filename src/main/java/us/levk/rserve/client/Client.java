@@ -43,7 +43,6 @@ import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Type;
@@ -174,47 +173,190 @@ public interface Client extends Closeable {
    * @return promise
    */
   default <T> CompletableFuture <T> batch (T j) {
-    return base (j.getClass ()).flatMap (c -> of (c.getDeclaredFields ()).filter (f -> {
-      return f.isAnnotationPresent (us.levk.rserve.client.Resolve.class);
-    })).reduce (base (j.getClass ()).reduce (base (j.getClass ()).flatMap (c -> of (c.getDeclaredFields ()).filter (f -> {
-      return f.isAnnotationPresent (us.levk.rserve.client.Assign.class);
-    })).reduce (completedFuture ((Void) null), (p, f) -> p.thenCompose (x -> {
-      String n = f.getAnnotation (us.levk.rserve.client.Assign.class).value ();
-      CompletableFuture <Void> r = new CompletableFuture <> ();
-      try {
-        assign ("".equals (n) ? f.getName () : n, f.get (j)).thenRun ( () -> r.complete (null));
-      } catch (Exception e) {
-        r.completeExceptionally (e);
-      }
-      return r;
-    }), (x, y) -> {
-      throw new UnsupportedOperationException ();
-    }), (p, c) -> {
-      p = c.isAnnotationPresent (R.class) ? p.thenCompose (x -> {
-        return evaluate (c.getAnnotation (R.class).value ());
-      }) : p;
-      return c.isAnnotationPresent (Rscript.class) ? p.thenCompose (x -> {
-        InputStream r = c.getResourceAsStream (c.getAnnotation (Rscript.class).value ());
-        return evaluate (new BufferedReader (new InputStreamReader (r)).lines ().collect (joining ("\n")));
-      }) : p;
+    CompletableFuture <Void> v = completedFuture (null);
+
+    // push
+    v = base (j.getClass ()).reduce (v, (w, c) -> {
+      // fields
+      w = of (c.getDeclaredFields ()).reduce (w, (u, f) -> {
+        Push l = f.getAnnotation (Push.class);
+        return l == null ? u : u.thenCompose (x -> {
+          CompletableFuture <Void> p = new CompletableFuture <> ();
+
+          try {
+            if (!f.isAccessible ()) f.setAccessible (true);
+            push ((File) f.get (j)).whenComplete ( (y, e) -> {
+              if (e != null) p.completeExceptionally (e);
+              else p.complete (null);
+            });
+          } catch (Exception e) {
+            p.completeExceptionally (e);
+          }
+
+          return p;
+        });
+      }, (x, y) -> {
+        throw new UnsupportedOperationException ();
+      });
+
+      // methods
+      w = of (c.getDeclaredMethods ()).reduce (w, (u, m) -> {
+        Push l = m.getAnnotation (Push.class);
+        return l == null ? u : u.thenCompose (x -> {
+          CompletableFuture <Void> p = new CompletableFuture <> ();
+
+          try {
+            if (!m.isAccessible ()) m.setAccessible (true);
+            push ((File) m.invoke (j)).whenComplete ( (y, e) -> {
+              if (e != null) p.completeExceptionally (e);
+              else p.complete (null);
+            });
+          } catch (Exception e) {
+            p.completeExceptionally (e);
+          }
+
+          return p;
+        });
+      }, (x, y) -> {
+        throw new UnsupportedOperationException ();
+      });
+
+      return w;
     }, (x, y) -> {
       throw new UnsupportedOperationException ();
-    }), (p, f) -> p.thenCompose (x -> {
-      if (!f.isAccessible ()) f.setAccessible (true);
-      String n = f.getAnnotation (us.levk.rserve.client.Resolve.class).value ();
-      CompletableFuture <Void> r = new CompletableFuture <> ();
-      resolve ("".equals (n) ? f.getName () : n, f.getGenericType ()).thenAccept (v -> {
-        try {
-          f.set (j, v);
-          r.complete (null);
-        } catch (Exception e) {
-          r.completeExceptionally (e);
-        }
+    });
+
+    // assign
+    v = base (j.getClass ()).reduce (v, (w, c) -> {
+      // fields
+      w = of (c.getDeclaredFields ()).reduce (w, (u, f) -> {
+        us.levk.rserve.client.Assign a = f.getAnnotation (us.levk.rserve.client.Assign.class);
+        return a == null ? u : u.thenCompose (x -> {
+          CompletableFuture <Void> p = new CompletableFuture <> ();
+
+          try {
+            if (!f.isAccessible ()) f.setAccessible (true);
+            assign (a.value ().equals ("") ? f.getName () : a.value (), f.get (j)).whenComplete ( (y, e) -> {
+              if (e != null) p.completeExceptionally (e);
+              else p.complete (null);
+            });
+          } catch (Exception e) {
+            p.completeExceptionally (e);
+          }
+
+          return p;
+        });
+      }, (x, y) -> {
+        throw new UnsupportedOperationException ();
       });
-      return r;
-    }), (x, y) -> {
+
+      // methods
+      w = of (c.getDeclaredMethods ()).reduce (w, (u, m) -> {
+        us.levk.rserve.client.Assign a = m.getAnnotation (us.levk.rserve.client.Assign.class);
+        return a == null ? u : u.thenCompose (x -> {
+          CompletableFuture <Void> p = new CompletableFuture <> ();
+
+          try {
+            if (!m.isAccessible ()) m.setAccessible (true);
+            assign (a.value ().equals ("") ? m.getName () : a.value (), m.invoke (j)).whenComplete ( (y, e) -> {
+              if (e != null) p.completeExceptionally (e);
+              else p.complete (null);
+            });
+          } catch (Exception e) {
+            p.completeExceptionally (e);
+          }
+
+          return p;
+        });
+      }, (x, y) -> {
+        throw new UnsupportedOperationException ();
+      });
+
+      return w;
+    }, (x, y) -> {
       throw new UnsupportedOperationException ();
-    }).thenApply (x -> j);
+    });
+
+    // evaluate
+    v = base (j.getClass ()).reduce (v, (w, c) -> {
+      // script
+      Rscript s = c.getAnnotation (Rscript.class);
+      if (s != null) w = w.thenCompose (x -> {
+        CompletableFuture <Void> p = new CompletableFuture <> ();
+
+        try (BufferedReader q =
+            new BufferedReader (new InputStreamReader (j.getClass ().getResourceAsStream (s.value ())))) {
+          return evaluate (q.lines ().collect (joining ("\n"))).thenRun ( () -> p.complete (null));
+        } catch (Exception e) {
+          p.completeExceptionally (e);
+        }
+
+        return p;
+      });
+
+      // code
+      R r = c.getAnnotation (R.class);
+      if (r != null) w = w.thenCompose (x -> evaluate (r.value ()));
+
+      return w;
+    }, (x, y) -> {
+      throw new UnsupportedOperationException ();
+    });
+
+    // resolve
+    v = base (j.getClass ()).reduce (v, (w, c) -> {
+      // fields
+      w = of (c.getDeclaredFields ()).reduce (w, (u, f) -> {
+        us.levk.rserve.client.Resolve r = f.getAnnotation (us.levk.rserve.client.Resolve.class);
+        return r == null ? u : u.thenCompose (x -> {
+          CompletableFuture <Void> p = new CompletableFuture <> ();
+
+          String n = r.value ().equals ("") ? f.getName () : r.value ();
+          resolve (n, f.getGenericType ()).thenAccept (t -> {
+            try {
+              if (!f.isAccessible ()) f.setAccessible (true);
+              f.set (j, t);
+              p.complete (null);
+            } catch (Exception e) {
+              p.completeExceptionally (e);
+            }
+          });
+
+          return p;
+        });
+      }, (x, y) -> {
+        throw new UnsupportedOperationException ();
+      });
+
+      // methods
+      w = of (c.getDeclaredMethods ()).reduce (w, (u, m) -> {
+        us.levk.rserve.client.Resolve r = m.getAnnotation (us.levk.rserve.client.Resolve.class);
+        return r == null ? u : u.thenCompose (x -> {
+          CompletableFuture <Void> p = new CompletableFuture <> ();
+
+          String n = r.value ().equals ("") ? m.getName () : r.value ();
+          resolve (n, m.getGenericParameterTypes ()[0]).thenAccept (t -> {
+            try {
+              if (!m.isAccessible ()) m.setAccessible (true);
+              m.invoke (j, t);
+              p.complete (null);
+            } catch (Exception e) {
+              p.completeExceptionally (e);
+            }
+          });
+
+          return p;
+        });
+      }, (x, y) -> {
+        throw new UnsupportedOperationException ();
+      });
+
+      return w;
+    }, (x, y) -> {
+      throw new UnsupportedOperationException ();
+    });
+
+    return v.thenApply (x -> j);
   }
 
   /**

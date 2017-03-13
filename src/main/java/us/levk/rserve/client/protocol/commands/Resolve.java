@@ -104,4 +104,14 @@ public class Resolve <T> implements Command <T> {
     }
     return m.readerFor (m.constructType (type)).readValue (b, a, z);
   }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.lang.Object#toString()
+   */
+  @Override
+  public String toString () {
+    return "Resolve{" + name + ":" + type + "}";
+  }
 }

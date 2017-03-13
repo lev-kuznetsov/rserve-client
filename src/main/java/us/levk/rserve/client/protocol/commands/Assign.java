@@ -87,4 +87,14 @@ public class Assign implements Command <Void> {
       }))), c.stream ()).flatMap (x -> x);
     }
   }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.lang.Object#toString()
+   */
+  @Override
+  public String toString () {
+    return "Assign{" + name + "=" + value + "}";
+  }
 }

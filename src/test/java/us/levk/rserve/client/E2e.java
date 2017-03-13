@@ -101,4 +101,18 @@ public class E2e {
       assertArrayEquals (new int[] { 1, 1, 2 }, k.r);
     }
   }
+
+  @Test
+  public void methodAssignResolve () throws Exception {
+    try (Client c = Client.rserve ().websocket ().connect (RSERVE)) {
+      c.batch (new MethodAssignResolve ()).get (10, SECONDS);
+    }
+  }
+
+  @Test
+  public void batchPush () throws Exception {
+    try (Client c = Client.rserve ().websocket ().connect (RSERVE)) {
+      c.batch (new BatchPush ()).get (10, SECONDS);
+    }
+  }
 }

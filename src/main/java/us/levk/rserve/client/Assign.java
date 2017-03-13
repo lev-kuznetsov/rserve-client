@@ -26,6 +26,7 @@
 package us.levk.rserve.client;
 
 import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Documented;
@@ -38,7 +39,7 @@ import java.lang.annotation.Target;
  * @author levk
  */
 @Retention (RUNTIME)
-@Target (FIELD)
+@Target ({ FIELD, METHOD })
 @Documented
 public @interface Assign {
 

@@ -73,4 +73,14 @@ public class Evaluate implements Command <Void> {
       return b.limit () - b.position ();
     }).reduce (0, (x, y) -> x + y))), n.stream ());
   }
+
+  /*
+   * (non-Javadoc)
+   * 
+   * @see java.lang.Object#toString()
+   */
+  @Override
+  public String toString () {
+    return "Evaluate{" + code + "}";
+  }
 }

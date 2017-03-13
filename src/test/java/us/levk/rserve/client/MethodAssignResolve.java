@@ -25,26 +25,34 @@
  */
 package us.levk.rserve.client;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
+@R ("f <- function (n) if (n < 1) 1 else n * f (n - 1); y <- f (x); b <- f (a); z <- f (f (a))")
+public class MethodAssignResolve {
 
-/**
- * Marks batch type members as resolution targets after code execution
- * 
- * @author levk
- */
-@Retention (RUNTIME)
-@Target ({ FIELD, METHOD })
-@Documented
-public @interface Resolve {
+  @Assign
+  private int x () {
+    return 5;
+  }
 
-  /**
-   * @return name to resolve, default to name of member
-   */
-  String value () default "";
+  @Resolve
+  private void y (int y) {
+    assertThat (y, is (120));
+  }
+
+  @Assign ("a")
+  private int ey () {
+    return 3;
+  }
+
+  @Resolve ("b")
+  private void bee (int b) {
+    assertThat (b, is (6));
+  }
+
+  @Resolve
+  private void z (int z) {
+    assertThat (z, is (720));
+  }
 }
