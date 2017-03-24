@@ -194,9 +194,9 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.glassfish.tyrus</groupId>
-      <artifactId>tyrus-container-grizzly-client</artifactId>
-      <version>1.13</version>
+      <groupId>org.eclipse.jetty.websocket</groupId>
+      <artifactId>javax-websocket-client-impl</artifactId>
+      <version>9.4.3.v20170317</version>
       <scope>runtime</scope>
     </dependency>
 
