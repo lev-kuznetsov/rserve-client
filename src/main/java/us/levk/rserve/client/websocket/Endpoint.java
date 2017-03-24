@@ -29,6 +29,7 @@ import static java.lang.Math.min;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.IntStream.range;
+import static javax.websocket.CloseReason.CloseCodes.NORMAL_CLOSURE;
 import static us.levk.rserve.client.protocol.Qap.packet;
 
 import java.io.IOException;
@@ -39,6 +40,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.websocket.ClientEndpoint;
+import javax.websocket.CloseReason;
+import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -145,6 +148,16 @@ public class Endpoint implements Client {
   @Override
   public void close () throws IOException {
     if (session.isOpen ()) session.close ();
+  }
+
+  /**
+   * @param r
+   *          close reason
+   */
+  @OnClose
+  public void disconnect (CloseReason r) {
+    if (r.getCloseCode () != NORMAL_CLOSURE)
+      handle (new IOException ("Unable to fulfil request: " + r.getReasonPhrase ()));
   }
 
   /*
